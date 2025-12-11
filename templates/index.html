@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Full-Stack Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #f7f7ff, #e4e7f5);
+    }
+
+    /* Layout: calculator + history side by side */
+    .page-layout {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .calculator-wrapper {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+      width: 340px;
+      max-width: 90vw;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .calc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .calc-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .calc-status {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #eef9f0;
+      color: #1f8b43;
+    }
+
+    .display {
+      background: #111827;
+      color: #f9fafb;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: right;
+      min-height: 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .expression {
+      opacity: 0.8;
+      font-size: 0.9rem;
+      min-height: 1.2em;
+      word-wrap: break-word;
+    }
+
+    .result {
+      font-size: 1.4rem;
+      font-weight: 600;
+      min-height: 1.4em;
+    }
+
+    .error {
+      color: #fecaca;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+    }
+
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      border: none;
+      padding: 12px 0;
+      border-radius: 999px;
+      font-size: 1rem;
+      cursor: pointer;
+      background: #f3f4f6;
+      transition: transform 0.06s ease, box-shadow 0.06s ease, background 0.1s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-op {
+      background: #e5e7eb;
+      font-weight: 600;
+    }
+
+    .btn-equals {
+      background: #2563eb;
+      color: white;
+      font-weight: 600;
+    }
+
+    .btn-clear {
+      background: #f97373;
+      color: white;
+      font-weight: 600;
+    }
+
+    .btn-utility {
+      font-size: 0.9rem;
+    }
+
+    .btn-sci {
+      font-size: 0.85rem;
+      background: #e0f2fe;
+    }
+
+    .span-2 {
+      grid-column: span 2;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    /* History card on the side */
+    .history-wrapper {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+      width: 220px;
+      max-height: 420px;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .history-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .history-entry:last-child {
+      border-bottom: none;
+    }
+
+    .clear-btn {
+      background: #ef4444;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    .clear-btn:hover {
+      background: #dc2626;
+    }
+
+    /* Stack vertically on small screens */
+    @media (max-width: 700px) {
+      .page-layout {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .history-wrapper {
+        width: 100%;
+        max-width: 340px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page-layout">
+    <div class="calculator-wrapper">
+      <div class="calc-header">
+        <div class="calc-title">Full-Stack Calculator</div>
+        <div class="calc-status" id="status-indicator">Connected</div>
+      </div>
+
+      <div class="display">
+        <div class="expression" id="expression-display"></div>
+        <div class="result" id="result-display">0</div>
+        <div class="error" id="error-display"></div>
+      </div>
+
+      <div class="buttons-grid">
+        <!-- Scientific rows -->
+        <button class="btn-sci" data-value="sin(">sin</button>
+        <button class="btn-sci" data-value="cos(">cos</button>
+        <button class="btn-sci" data-value="tan(">tan</button>
+        <button class="btn-sci" data-value="sqrt(">√</button>
+
+        <button class="btn-sci" data-value="log(">log</button>
+        <button class="btn-sci" data-value="pi">π</button>
+        <button class="btn-sci" data-value="(">(</button>
+        <button class="btn-sci" data-value=")">)</button>
+
+        <!-- Control row: AC smaller, "(" and ")" together above, e at end -->
+        <button class="btn-clear" data-action="clear">AC</button>
+        <button class="btn-utility" data-action="backspace">⌫</button>
+        <button class="btn-op" data-value="/">÷</button>
+        <button class="btn-sci" data-value="e">e</button>
+
+        <!-- Normal calculator rows -->
+        <button data-value="7">7</button>
+        <button data-value="8">8</button>
+        <button data-value="9">9</button>
+        <button class="btn-op" data-value="*">×</button>
+
+        <button data-value="4">4</button>
+        <button data-value="5">5</button>
+        <button data-value="6">6</button>
+        <button class="btn-op" data-value="-">−</button>
+
+        <button data-value="1">1</button>
+        <button data-value="2">2</button>
+        <button data-value="3">3</button>
+        <button class="btn-op" data-value="+">+</button>
+
+        <button data-value="0" class="span-2">0</button>
+        <button data-value=".">.</button>
+        <button class="btn-equals" data-action="equals">=</button>
+      </div>
+
+      <div class="footer-note">
+        Backend: Flask API · Safe math evaluation · History & scientific functions
+      </div>
+    </div>
+
+    <!-- History beside calculator -->
+    <div class="history-wrapper">
+      <div class="history-header">
+        <div>History</div>
+        <div class="clear-btn" onclick="clearHistory()">Clear</div>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const exprDisplay = document.getElementById("expression-display");
+    const resultDisplay = document.getElementById("result-display");
+    const errorDisplay = document.getElementById("error-display");
+    const statusIndicator = document.getElementById("status-indicator");
+    const historyList = document.getElementById("history-list");
+
+    let expression = "";
+    let justCalculated = false;
+
+    function setStatus(ok) {
+      if (ok) {
+        statusIndicator.textContent = "Connected";
+        statusIndicator.style.background = "#eef9f0";
+        statusIndicator.style.color = "#1f8b43";
+      } else {
+        statusIndicator.textContent = "Offline";
+        statusIndicator.style.background = "#fee2e2";
+        statusIndicator.style.color = "#b91c1c";
+      }
+    }
+
+    function updateDisplay() {
+      exprDisplay.textContent = expression;
+    }
+
+    function appendValue(value) {
+      // After "=", decide how to continue
+      if (justCalculated) {
+        if (/[0-9.]/.test(value)) {
+          // Number -> start a new expression
+          expression = value;
+        } else if (/[+\-*/%]/.test(value)) {
+          // Operator -> continue from result
+          expression = resultDisplay.textContent + value;
+        } else {
+          // Functions, parentheses, constants just append
+          expression = expression + value;
+        }
+        justCalculated = false;
+      } else {
+        expression += value;
+      }
+
+      updateDisplay();
+      errorDisplay.textContent = "";
+    }
+
+    function clearExpression() {
+      expression = "";
+      justCalculated = false;
+      updateDisplay();
+      resultDisplay.textContent = "0";
+      errorDisplay.textContent = "";
+    }
+
+    function backspace() {
+      if (justCalculated) {
+        expression = "";
+        justCalculated = false;
+      } else {
+        expression = expression.slice(0, -1);
+      }
+      updateDisplay();
+      errorDisplay.textContent = "";
+    }
+
+    async function calculate() {
+      if (!expression.trim()) return;
+
+      try {
+        const res = await fetch("/api/calculate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ expression })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorDisplay.textContent = data.error || "Invalid expression";
+          justCalculated = false;
+          return;
+        }
+
+        resultDisplay.textContent = data.result;
+        errorDisplay.textContent = "";
+        setStatus(true);
+
+        // Use result as new base expression
+        expression = String(data.result);
+        updateDisplay();
+        justCalculated = true;
+
+        // Refresh history
+        loadHistory();
+
+      } catch (err) {
+        console.error(err);
+        errorDisplay.textContent = "Network error";
+        setStatus(false);
+        justCalculated = false;
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/history");
+        const history = await res.json();
+
+        historyList.innerHTML = history
+          .map(
+            (item) =>
+              `<div class="history-entry">${item.expression} = <strong>${item.result}</strong></div>`
+          )
+          .join("");
+      } catch (err) {
+        console.error("Error loading history", err);
+      }
+    }
+
+    async function clearHistory() {
+      try {
+        await fetch("/api/history/clear", { method: "POST" });
+        loadHistory();
+      } catch (err) {
+        console.error("Error clearing history", err);
+      }
+    }
+
+    document.querySelector(".buttons-grid").addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+
+      const value = btn.getAttribute("data-value");
+      const action = btn.getAttribute("data-action");
+
+      if (value !== null) {
+        appendValue(value);
+      } else if (action === "clear") {
+        clearExpression();
+      } else if (action === "backspace") {
+        backspace();
+      } else if (action === "equals") {
+        calculate();
+      }
+    });
+
+    // Keyboard support (including letters for sin, cos, log, etc.)
+    document.addEventListener("keydown", (e) => {
+      if ((e.key >= "0" && e.key <= "9") || "+-*/().%".includes(e.key)) {
+        appendValue(e.key);
+      } else if (/^[a-zA-Z]$/.test(e.key)) {
+        appendValue(e.key); // sin, cos, tan, log, etc.
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        calculate();
+      } else if (e.key === "Backspace") {
+        backspace();
+      } else if (e.key === "Escape") {
+        clearExpression();
+      }
+    });
+
+    // Load history on startup
+    loadHistory();
+  </script>
+</body>
+</html>
