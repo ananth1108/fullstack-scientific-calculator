@@ -123,11 +123,6 @@ POST /api/history/clear
 
 Clears stored history.
 
-📸 Screenshots
-
-(Add images from your running app here!)
-You can drag & drop screenshots into your GitHub README later.
-
 🧭 Roadmap / Future Enhancements
 
 Persistent history using SQLite
